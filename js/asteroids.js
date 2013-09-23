@@ -92,18 +92,26 @@ ship.thrustingDown = false;
 ship.thrustingLeft = false;
 ship.thrustingRight = false;
 
+// Clockwise rotation of the ship in radians, with
+// 0 = right.
+ship.angle = 0;
+
 // Ship-specific state update
 ship.update = function(dt) {
     // Apply acceleration
-    if (this.thrustingUp)
-        this.vy -= thrust * dt;
-    if (this.thrustingDown)
-        this.vy += thrust * dt;
+    if (this.thrustingUp) {
+        this.vx += Math.cos(this.angle) * thrust * dt;
+        this.vy += Math.sin(this.angle) * thrust * dt;
+    } if (this.thrustingDown) {
+        this.vx -= Math.cos(this.angle) * thrust * dt;
+        this.vy -= Math.sin(this.angle) * thrust * dt;
+    }
 
+    // Apply rotation
     if (this.thrustingLeft)
-        this.vx -= thrust * dt;
+        this.angle -= Math.PI * dt;
     if (this.thrustingRight)
-        this.vx += thrust * dt;
+        this.angle += Math.PI * dt;
     
     // Velocity decay
     this.vx -= (this.vx * speedDecay * dt);
@@ -123,13 +131,16 @@ ship.update = function(dt) {
 ship.draw = function() {
     ctx.beginPath();
     ctx.save();
+    console.log(this.angle);
     var pi = Math.PI;
 
     ctx.translate(this.x, this.y);
-    ctx.moveTo(0, -this.r);
-    ctx.lineTo(Math.cos(pi/2 + 2*pi/3)*this.r, -Math.sin(pi/2 + 2*pi/3)*this.r);
+    ctx.rotate(this.angle);
+
+    ctx.moveTo(this.r, 0);
+    ctx.lineTo(Math.cos(2*pi/3)*this.r, -Math.sin(2*pi/3)*this.r);
     ctx.lineTo(0, 0);
-    ctx.lineTo(Math.cos(pi/2 + 4*pi/3)*this.r, -Math.sin(pi/2 + 4*pi/3)*this.r);
+    ctx.lineTo(Math.cos(4*pi/3)*this.r, -Math.sin(4*pi/3)*this.r);
     ctx.closePath();
 
     ctx.stroke()
