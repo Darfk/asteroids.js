@@ -34,16 +34,15 @@ function GameObject() {
     
     // Radius of object in pixels
     this.r = 20;
-
-    objects.push(this);
 }
 
-// Default object drawing
+// Draw objects as a circle
 GameObject.prototype.draw = function() {
     ctx.beginPath()
     ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI);
     ctx.stroke();
 };
+
 
 // Update object state
 GameObject.prototype.update = function(dt) {
@@ -61,6 +60,112 @@ GameObject.prototype.update = function(dt) {
         this.y = screen.height + this.r;
 
 };
+
+// Asteroids have a random size, velocity, and start location
+function Asteroid() {
+    this.r = 10 + Math.random()*40;
+
+    this.x = Math.random()*screen.width;
+    this.y = Math.random()*screen.width;
+
+    this.vx = 30 * Math.random();
+    this.vy = 30 * Math.random();
+}
+Asteroid.prototype = new GameObject();
+
+// The ship needs to be able to accelarate and shoot
+function Ship() { 
+    this.thrustingUp = false;
+    this.thrustingDown = false;
+    this.thrustingLeft = false;
+    this.thrustingRight = false;
+    this.firing = false;
+    this.cooldown = 0; // time until bullet readied
+    this.angle = 0;    // Clockwise rotation in radians, with 0 = right.
+}
+Ship.prototype = new GameObject();
+
+// Somewhat-Newtonian physics
+Ship.prototype.applyThrust = function(dt) {
+    // Apply acceleration
+    if (this.thrustingUp) {
+        this.vx += Math.cos(this.angle) * thrust * dt;
+        this.vy += Math.sin(this.angle) * thrust * dt;
+    } if (this.thrustingDown) {
+        this.vx -= Math.cos(this.angle) * thrust * dt;
+        this.vy -= Math.sin(this.angle) * thrust * dt;
+    }
+
+    // Apply rotation
+    if (this.thrustingLeft)
+        this.angle -= Math.PI * dt;
+    if (this.thrustingRight)
+        this.angle += Math.PI * dt;
+};
+
+// Produce bullets
+Ship.prototype.updateWeapons = function(dt) {
+    // Shoot
+    if (this.cooldown >= 0)
+        this.cooldown -= dt;
+    if (this.firing && this.cooldown <= 0) {
+        this.cooldown = shipFireTime
+            objects.push(new Bullet(this));
+    }
+};
+
+Ship.prototype.update = function(dt) {
+
+    this.applyThrust(dt);
+
+    // Velocity decay
+    this.vx -= (this.vx * speedDecay * dt);
+    this.vy -= (this.vy * speedDecay * dt);
+    
+    // Clamp top speed
+    speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed / topSpeed > 1) {
+        this.vx /= speed / topSpeed;
+        this.vy /= speed / topSpeed;
+    }
+
+    this.updateWeapons(dt);
+
+    GameObject.prototype.update.call(this, dt);
+};
+
+// Draw a trianglular shape to indicate direction
+Ship.prototype.draw = function() {
+    var pi = Math.PI;
+
+    ctx.save();
+    ctx.beginPath();    
+
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);    
+    
+    ctx.moveTo(this.r, 0);
+    ctx.lineTo(Math.cos(2*pi/3)*this.r, -Math.sin(2*pi/3)*this.r);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(Math.cos(4*pi/3)*this.r, -Math.sin(4*pi/3)*this.r);
+    ctx.closePath();
+
+    ctx.stroke()    
+    ctx.restore();
+
+    GameObject.prototype.draw.call(this);
+}
+
+// Bullets initial state depends on the ship that fired them
+function Bullet(parent) {
+    this.r = 5;
+    this.x = parent.x + Math.cos(parent.angle) * (parent.r + this.r + 10);
+    this.y = parent.y + Math.sin(parent.angle) * (parent.r + this.r + 10);
+    this.vx = parent.vx + Math.cos(parent.angle) * bulletSpeed;
+    this.vy = parent.vy + Math.sin(parent.angle) * bulletSpeed;
+}
+Bullet.prototype = new GameObject();
+
 
 // Update the scene
 function update(dt) {
@@ -103,83 +208,8 @@ function run(time) {
 
 // Player ship
 
-var ship = new GameObject();
-
-// Ship-specific state
-ship.thrustingUp = false;
-ship.thrustingDown = false;
-ship.thrustingLeft = false;
-ship.thrustingRight = false;
-ship.firing = false;
-ship.cooldown = 0; // time until bullet readied
-// Clockwise rotation of the ship in radians, with
-// 0 = right.
-ship.angle = 0;
-
-// Ship-specific state update
-ship.update = function(dt) {
-    // Apply acceleration
-    if (this.thrustingUp) {
-        this.vx += Math.cos(this.angle) * thrust * dt;
-        this.vy += Math.sin(this.angle) * thrust * dt;
-    } if (this.thrustingDown) {
-        this.vx -= Math.cos(this.angle) * thrust * dt;
-        this.vy -= Math.sin(this.angle) * thrust * dt;
-    }
-
-    // Apply rotation
-    if (this.thrustingLeft)
-        this.angle -= Math.PI * dt;
-    if (this.thrustingRight)
-        this.angle += Math.PI * dt;
-    
-    // Velocity decay
-    this.vx -= (this.vx * speedDecay * dt);
-    this.vy -= (this.vy * speedDecay * dt);
-    
-    // Clamp top speed
-    speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-    if (speed / topSpeed > 1) {
-        this.vx /= speed / topSpeed;
-        this.vy /= speed / topSpeed;
-    }
-
-    // Shoot
-    if (this.cooldown >= 0)
-        this.cooldown -= dt;
-    if (this.firing && this.cooldown <= 0) {
-        this.cooldown = shipFireTime
-        var bullet = new GameObject();
-        bullet.r = 5;
-        bullet.x = this.x + Math.cos(this.angle) * (this.r + bullet.r + 10);
-        bullet.y = this.y + Math.sin(this.angle) * (this.r + bullet.r + 10);
-        bullet.vx = this.vx + Math.cos(this.angle) * bulletSpeed;
-        bullet.vy = this.vy + Math.sin(this.angle) * bulletSpeed;
-    }
-
-    GameObject.prototype.update.call(this, dt);
-};
-
-// Ship-specific drawing
-ship.draw = function() {
-    ctx.beginPath();
-    ctx.save();
-    var pi = Math.PI;
-
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-
-    ctx.moveTo(this.r, 0);
-    ctx.lineTo(Math.cos(2*pi/3)*this.r, -Math.sin(2*pi/3)*this.r);
-    ctx.lineTo(0, 0);
-    ctx.lineTo(Math.cos(4*pi/3)*this.r, -Math.sin(4*pi/3)*this.r);
-    ctx.closePath();
-
-    ctx.stroke()
-    ctx.restore();
-
-    GameObject.prototype.draw.call(this);
-}
+var ship = new Ship();
+objects.push(ship);
 
 // Keyboard input
 function handleKeydown(event) {
@@ -228,14 +258,8 @@ document.addEventListener('keyup', handleKeyup);
 
 // Asteroids
 for (i=0; i < 5; i++) {
-    asteroid = new GameObject();
-    asteroid.r = 10 + Math.random()*40;
-
-    asteroid.x = Math.random()*screen.width;
-    asteroid.y = Math.random()*screen.width;
-
-    asteroid.vx = 30 * Math.random();
-    asteroid.vy = 30 * Math.random();
+    objects.push(new Asteroid());
+    
 }
 
 run();
