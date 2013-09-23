@@ -96,7 +96,10 @@ function run(time) {
         draw();
 }
 
+// Player ship
+
 var ship = new GameObject();
+
 // Ship-specific state
 ship.thrustingUp = false;
 ship.thrustingDown = false;
@@ -200,5 +203,17 @@ function handleKeyup(event) {
 document.addEventListener('keydown', handleKeydown);
 document.addEventListener('keyup', handleKeyup);
 
+
+// Asteroids
+for (i=0; i < 5; i++) {
+    asteroid = new GameObject();
+    asteroid.r = 10 + Math.random()*40;
+
+    asteroid.x = Math.random()*screen.width;
+    asteroid.y = Math.random()*screen.width;
+
+    asteroid.vx = 30 * Math.random();
+    asteroid.vy = 30 * Math.random();
+}
 document.add
 run();
