@@ -13,6 +13,11 @@ thrust = 100;
 topSpeed = 500;
 // Ship speed lost per second
 speedDecay = 0.2;
+// Seconds between shots
+shipFireTime = 0.3;
+// Speed of bullets in pixels/second
+// this gets added to the ship's velocity.
+bulletSpeed = 100;
 
 ctx.fillStyle = "#000";
 ctx.strokeStyle = "#ffffff";
@@ -105,7 +110,8 @@ ship.thrustingUp = false;
 ship.thrustingDown = false;
 ship.thrustingLeft = false;
 ship.thrustingRight = false;
-
+ship.firing = false;
+ship.cooldown = 0; // time until bullet readied
 // Clockwise rotation of the ship in radians, with
 // 0 = right.
 ship.angle = 0;
@@ -138,6 +144,19 @@ ship.update = function(dt) {
         this.vy /= speed / topSpeed;
     }
 
+    // Shoot
+    if (this.cooldown >= 0)
+        this.cooldown -= dt;
+    if (this.firing && this.cooldown <= 0) {
+        this.cooldown = shipFireTime
+        var bullet = new GameObject();
+        bullet.r = 5;
+        bullet.x = this.x + Math.cos(this.angle) * (this.r + bullet.r + 10);
+        bullet.y = this.y + Math.sin(this.angle) * (this.r + bullet.r + 10);
+        bullet.vx = this.vx + Math.cos(this.angle) * bulletSpeed;
+        bullet.vy = this.vy + Math.sin(this.angle) * bulletSpeed;
+    }
+
     GameObject.prototype.update.call(this, dt);
 };
 
@@ -145,7 +164,6 @@ ship.update = function(dt) {
 ship.draw = function() {
     ctx.beginPath();
     ctx.save();
-    console.log(this.angle);
     var pi = Math.PI;
 
     ctx.translate(this.x, this.y);
@@ -165,6 +183,8 @@ ship.draw = function() {
 
 // Keyboard input
 function handleKeydown(event) {
+    if (event.keyCode == 32)
+        ship.firing = true;
     // w, up
     if (event.keyCode == 38 || event.keyCode == 87)
         ship.thrustingUp = true;
@@ -183,6 +203,8 @@ function handleKeydown(event) {
 }
 
 function handleKeyup(event) {
+    if (event.keyCode == 32)
+        ship.firing = false;
     // w, up
     if (event.keyCode == 38 || event.keyCode == 87)
         ship.thrustingUp = false;
