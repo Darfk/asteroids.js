@@ -26,6 +26,7 @@ function GameObject() {
 
 // Default object drawing
 GameObject.prototype.draw = function() {
+    ctx.beginPath()
     ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI);
     ctx.stroke();
 };
@@ -46,6 +47,7 @@ function update(dt) {
 // Draw the scene
 function draw() { 
     // Clear the screen
+    ctx.clearRect(0, 0, screen.width, screen.height);
     ctx.fillRect(0, 0, screen.width, screen.height);
     
     // Draw all the objects
@@ -58,11 +60,8 @@ function draw() {
 var lastTick = null;
 // Main loop
 function run(time) {
-
     // Run at at no more than 30fps, to avoid hogging cpu
     setTimeout(function() {requestAnimationFrame(run);}, 1000/30);
-
-    //console.log(time);
 
     if (lastTick == null) lastTick = time;
 
