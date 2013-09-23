@@ -70,6 +70,7 @@ function run(time) {
     lastTick = time;
 
     if (ms > 0) {
+        if (ms > 100) ms = 100;
         var dt = ms/1000;
         update(dt);
     }
