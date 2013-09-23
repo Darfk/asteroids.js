@@ -44,6 +44,17 @@ GameObject.prototype.draw = function() {
 GameObject.prototype.update = function(dt) {
     this.x += this.vx*dt;
     this.y += this.vy*dt;
+
+    // Screen wrapping
+    if (this.x - this.r > screen.width && this.vx > 0)
+        this.x = 0 - this.r;
+    if (this.x + this.r < 0 && this.vx < 0)
+        this.x = screen.width + this.r;
+    if (this.y - this.r > screen.height && this.vy > 0)
+        this.y = 0 - this.r;
+    if (this.y + this.r < 0 && this.vy < 0)
+        this.y = screen.height + this.r;
+
 };
 
 // Update the scene
