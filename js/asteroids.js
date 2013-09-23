@@ -215,5 +215,5 @@ for (i=0; i < 5; i++) {
     asteroid.vx = 30 * Math.random();
     asteroid.vy = 30 * Math.random();
 }
-document.add
+
 run();
