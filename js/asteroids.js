@@ -22,6 +22,10 @@ bulletSpeed = 100;
 ctx.fillStyle = "#000";
 ctx.strokeStyle = "#ffffff";
 
+// Minimum & maximum size of asteroids
+minAsteroid = 10;
+maxAsteroid = 100;
+
 // Moving object
 function GameObject() {
     // Coordinates of center in  pixels (canvas coordinates)
@@ -61,17 +65,56 @@ GameObject.prototype.update = function(dt) {
 
 };
 
+// Are a pastricular pair of objects colliding?
+GameObject.prototype.isColliding = function(other) {
+    var dx = (this.x - other.x);
+    var dy = (this.y - other.y);
+    return  Math.sqrt(dx*dx + dy*dy) < (this.r + other.r);
+};
+
+// If we've hit some stuff, how do we resolve the collision?
+GameObject.prototype.resolveCollision = function(hit, resolved) {
+    // By default, don't do anything
+    resolved.push(this);
+};
+
 // Asteroids have a random size, velocity, and start location
 function Asteroid() {
-    this.r = 10 + Math.random()*40;
+    this.r = minAsteroid + Math.random()*(maxAsteroid - minAsteroid);
 
     this.x = Math.random()*screen.width;
     this.y = Math.random()*screen.width;
 
-    this.vx = 30 * Math.random();
-    this.vy = 30 * Math.random();
+    this.vx = 30 - 60 * Math.random();
+    this.vy = 30 - 60 * Math.random();
 }
 Asteroid.prototype = new GameObject();
+
+Asteroid.prototype.resolveCollision = function(hit, resolved) {
+    var dead = false;
+    for (var i=0; i < hit.length; i++) {
+        if (!(hit[i] instanceof Asteroid)) {
+                dead = true;
+                break;
+            }
+    }
+    if (dead) {
+        if (this.r / 2 > minAsteroid) {
+            for (i = 0; i < 3; i++) {
+                var child = new Asteroid();
+                child.r = this.r/2;
+                
+                // Spawn children on the border they're heading to
+                speed = Math.sqrt((child.vx*child.vx + child.vy*child.vy));
+                child.x = this.x + (child.vx / speed) * (this.r - child.r);
+                child.y = this.y + (child.vy / speed) * (this.r - child.r);
+
+                resolved.push(child);
+            }
+        }
+    } else  resolved.push(this);
+}
+
 
 // The ship needs to be able to accelarate and shoot
 function Ship() { 
@@ -154,7 +197,7 @@ Ship.prototype.draw = function() {
     ctx.restore();
 
     GameObject.prototype.draw.call(this);
-}
+};
 
 // Bullets initial state depends on the ship that fired them
 function Bullet(parent) {
@@ -166,6 +209,25 @@ function Bullet(parent) {
 }
 Bullet.prototype = new GameObject();
 
+Bullet.prototype.resolveCollision = function(hit, resolved) {
+    if (hit.length == 0)
+        resolved.push(this);
+}
+// Detetect and handle collisions
+function detectCollisions() {
+    // List of objects once all collisions are resolved
+    var resolved = [];
+    for (var i = 0; i < objects.length; i++) {
+        var hit = [];
+        for (var j = 0; j < objects.length; j++) {
+            if (i !== j &&  objects[i].isColliding(objects[j])) {
+                hit.push(objects[j]);
+            }
+        }
+        objects[i].resolveCollision(hit, resolved);
+    }
+    objects = resolved;
+}
 
 // Update the scene
 function update(dt) {
@@ -173,7 +235,11 @@ function update(dt) {
     for (var i = 0, len = objects.length; i < len; i++) {
         objects[i].update(dt);
     }
+
+    // Handle the collisions
+    detectCollisions();
 }
+
 // Draw the scene
 function draw() { 
     // Clear the screen
@@ -192,14 +258,13 @@ var lastTick = null;
 function run(time) {
     // Run at at no more than 30fps, to avoid hogging cpu
     setTimeout(function() {requestAnimationFrame(run);}, 1000/30);
-
     if (lastTick == null) lastTick = time;
 
     var ms = time - lastTick;
     lastTick = time;
 
     if (ms > 0) {
-        if (ms > 100) ms = 100;
+        if (ms > 50) ms = 50;
         var dt = ms/1000;
         update(dt);
     }
