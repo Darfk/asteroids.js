@@ -1,8 +1,8 @@
 /* asteroids.js
    A simple asteroids game
 */
-var screen = document.getElementById("screen");
-var ctx = screen.getContext("2d");
+var ctx = document.getElementById("screen");
+var ctx = ctx.getContext("2d");
 var objects = [];
 
 // Config
